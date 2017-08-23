@@ -87,6 +87,7 @@ void loop() {
               if(input.charAt(index+1)=='*'){
                 stepCar.step(d_A*((int)input.charAt(index+2)));
                 carrete += d_A*((int)input.charAt(index+2));
+                index+=2;
               }else{
                 stepCar.step(d_A);
                 carrete += d_A;
