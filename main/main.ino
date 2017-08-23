@@ -84,8 +84,13 @@ void loop() {
               //sendmsg("punzon");
               break;
             case '2'://HORIZ DOTS
-              stepCar.step(d_A);
-              carrete += d_A;
+              if(input.charAt(index+1)=='*'){
+                stepCar.step(d_A*((int)input.charAt(index+2)));
+                carrete += d_A*((int)input.charAt(index+2));
+              }else{
+                stepCar.step(d_A);
+                carrete += d_A;
+              }
               delay(steepsDelay);
               //sendmsg("DIST A");
               break;
