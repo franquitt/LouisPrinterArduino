@@ -26,6 +26,9 @@ int d_A = 20;
 int d_B = 35;
 int d_C = 25;
 int d_D = 50;
+int sleepCarro=400;
+int sleepRolo=400;
+int d_IncioCarro = 0;
 
 int steepsDelay = 100;//era 100
 int carrete = 0;
@@ -70,6 +73,7 @@ while (Serial.available() > 0) {
 
     } else {
       if (input.startsWith("-")) { //DIMENSIONES
+          input=input.substring(1);
           d_A = getValue(input, '_', 0).toInt();
           
           d_B = getValue(input, '_', 1).toInt();
@@ -77,6 +81,12 @@ while (Serial.available() > 0) {
           d_C = getValue(input, '_', 2).toInt();
           
           d_D = getValue(input, '_', 3).toInt();
+          
+          sleepRolo = getValue(input, '_', 4).toInt();
+          
+          sleepCarro = getValue(input, '_', 5).toInt();
+
+          d_IncioCarro = getValue(input, '_', 7).toInt();
           
           //stepSheet.setSpeed(getValue(input, '_', 4).toInt());
           
@@ -107,7 +117,6 @@ while (Serial.available() > 0) {
                 carrete += d_A;
               }
               delay(steepsDelay);
-              //sendmsg("DIST A");
               break;
             case '3'://HORIZ CHARS
               stepCarroMove(d_B);
@@ -139,6 +148,12 @@ while (Serial.available() > 0) {
               delay(steepsDelay);
               //sendmsg("HORIZ DOTS + HORIZ CHARS");
               break;
+            case '9'://INICIO CARRO DIST
+              stepCarroMove(d_IncioCarro);
+              carrete += d_B;
+              delay(steepsDelay);
+              //sendmsg("DIST B");
+              break;
           }
           if (goBack) {
             carroHome();
@@ -157,9 +172,9 @@ void stepCarroMove(int steps){
   for(int cantidad=0;cantidad<steps;cantidad++){
     digitalWrite(dirCarro, LOW);
     digitalWrite(stepCarro, HIGH);
-    delayMicroseconds(400);
+    delayMicroseconds(sleepCarro);
     digitalWrite(stepCarro, LOW);
-    delayMicroseconds(400);
+    delayMicroseconds(sleepCarro);
   }
   actiMotors(false);
 }
@@ -168,9 +183,9 @@ void stepRoloMove(int steps){
   for(int cantidad=0;cantidad<steps;cantidad++){
     digitalWrite(dirRolo, LOW);
     digitalWrite(stepRolo, HIGH);
-    delayMicroseconds(400);
+    delayMicroseconds(sleepRolo);
     digitalWrite(stepRolo, LOW);
-    delayMicroseconds(400);
+    delayMicroseconds(sleepRolo);
   }
   actiMotors(false);
 }
@@ -179,9 +194,9 @@ void carroHome(){
   digitalWrite(dirCarro, HIGH);
   while(!limIzq()){
     digitalWrite(stepCarro, HIGH);
-    delayMicroseconds(400);
+    delayMicroseconds(sleepCarro);
     digitalWrite(stepCarro, LOW);
-    delayMicroseconds(400);
+    delayMicroseconds(sleepCarro);
   }
   actiMotors(false);
 }
@@ -197,9 +212,11 @@ void carroEnd(){
   actiMotors(false);
 }
 void punzar(){
+  delay(100);
   digitalWrite(punzon, HIGH);
   delay(20);//se empieza a fallar con menos                   
   digitalWrite(punzon, LOW);
+  delay(100);
 }
 void actiMotors(bool state){
   digitalWrite(enableMotorsPin, !state);
