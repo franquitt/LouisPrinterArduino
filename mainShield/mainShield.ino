@@ -1,42 +1,59 @@
-//Braille Printer
-
 /*
- * 
- * 
- * 
- * D8 va a todos los drivers enable
- */
-#include <Stepper.h>
+  AnalogReadSerial
+
+  Reads an analog input on pin 0, prints the result to the Serial Monitor.
+  Graphical representation is available using Serial Plotter (Tools > Serial Plotter menu).
+  Attach the center pin of a potentiometer to pin A0, and the outside pins to +5V and ground.
+
+  This example code is in the public domain.
+
+  http://www.arduino.cc/en/Tutorial/AnalogReadSerial
+*/
+
+// the setup routine runs once when you press reset:
+int finalDerecha=12;
+int finalIzquierda=9;
+int enableMotorsPin=8;
+int dirRolo=4;
+int stepRolo=7;
+int dirCarro=2;
+int stepCarro=5;
+int punzon = 10;
+
+//distancias
 String input = "";
-int d_A = 25;
+int d_A = 20;
 int d_B = 35;
 int d_C = 25;
 int d_D = 50;
-int pun_out = 3;
-int carrete = 0;
-int stepCar_vel=90;
-const int stepsPerRevolution = 400;//0.9° stepper
+
 int steepsDelay = 100;//era 100
-Stepper stepSheet(stepsPerRevolution, 8, 9, 10, 11);
-Stepper stepCar(stepsPerRevolution, 7, 6, 5, 4);
+int carrete = 0;
+bool enabledMotors=false;
+
 void setup() {
-  pinMode(pun_out, OUTPUT);
-  pinMode(4, OUTPUT);
-  pinMode(5, OUTPUT);
-  pinMode(6, OUTPUT);
-  pinMode(7, OUTPUT);
-  pinMode(8, OUTPUT);
-  pinMode(9, OUTPUT);
-  pinMode(10, OUTPUT);
-  pinMode(11, OUTPUT);
-  stepSheet.setSpeed(60);//era 60
-  stepCar.setSpeed(90);//era 90
-  Serial.begin(9600); //Open the serial port
-  pinMode(LED_BUILTIN, OUTPUT); //Set the digital pin as output
+  // initialize serial communication at 9600 bits per second:
+  Serial.begin(9600);
+  //configure pin 2 as an input and enable the internal pull-up resistor
+  pinMode(finalDerecha, INPUT_PULLUP);
+  pinMode(finalIzquierda, INPUT_PULLUP);
+  pinMode(13, OUTPUT);
+  pinMode(enableMotorsPin, OUTPUT);
+  digitalWrite(enableMotorsPin, HIGH);//DESACTIVA TODOS LOS MOTORES AL PRINCIPIO
+  pinMode(punzon, OUTPUT);
+  pinMode(dirCarro, OUTPUT);
+  pinMode(stepCarro, OUTPUT);
+  digitalWrite(stepCarro, LOW);
+  pinMode(dirRolo, OUTPUT);
+  pinMode(stepRolo, OUTPUT);
+  digitalWrite(stepRolo, LOW);
+  Serial.begin(9600);
+  carroHome();
 }
 
+// the loop routine runs over and over again forever:
 void loop() {
-  while (Serial.available() > 0) {
+while (Serial.available() > 0) {
     //sendmsg("recibido_crack! "+input);
     input = Serial.readString();
     //BASICS
@@ -61,10 +78,10 @@ void loop() {
           
           d_D = getValue(input, '_', 3).toInt();
           
-          stepSheet.setSpeed(getValue(input, '_', 4).toInt());
+          //stepSheet.setSpeed(getValue(input, '_', 4).toInt());
           
-          stepCar_vel =  getValue(input, '_', 5).toInt();
-          stepCar.setSpeed(stepCar_vel);
+          //stepCar_vel =  getValue(input, '_', 5).toInt();
+          //stepCar.setSpeed(stepCar_vel);
           
           steepsDelay =  getValue(input, '_', 6).toInt();
           sendmsg("done.");
@@ -77,37 +94,35 @@ void loop() {
           
           switch (actual) {
             case '1'://SOLENOIDE
-              digitalWrite(pun_out, HIGH);
-              delay(steepsDelay * 2);
-              digitalWrite(pun_out, LOW);
+              punzar();
               //sendmsg("punzon");
               break;
             case '2'://HORIZ DOTS
               if(input.charAt(index+1)=='*'){
-                stepCar.step(d_A*((int)input.charAt(index+2)));
+                stepCarroMove(d_A*((int)input.charAt(index+2)));
                 carrete += d_A*((int)input.charAt(index+2));
                 index+=2;
               }else{
-                stepCar.step(d_A);
+                stepCarroMove(d_A);
                 carrete += d_A;
               }
               delay(steepsDelay);
               //sendmsg("DIST A");
               break;
             case '3'://HORIZ CHARS
-              stepCar.step(d_B);
+              stepCarroMove(d_B);
               carrete += d_B;
               delay(steepsDelay);
               //sendmsg("DIST B");
               break;
             case '4'://VERT DOTS
-              stepSheet.step(d_C);
+              stepRoloMove(d_C);
               goBack = true;
               delay(steepsDelay);
               //sendmsg("DIST C");
               break;
             case '5'://VERT RENG
-              stepSheet.step(d_D);
+              stepRoloMove(d_D);
               goBack = true;
               delay(steepsDelay);
               //sendmsg("DIST D");
@@ -119,17 +134,14 @@ void loop() {
               //sendmsg("END PRINT");
               break;
             case '8'://HORIZ DOTS + HORIZ CHARS
-              stepCar.step(d_A + d_B);
+              stepCarroMove(d_A + d_B);
               carrete += d_A + d_B;
               delay(steepsDelay);
               //sendmsg("HORIZ DOTS + HORIZ CHARS");
               break;
           }
-          stopSheet();
-          stopCar();
           if (goBack) {
-            returnCarrete();
-            stopCar();
+            carroHome();
             goBack = false;
           }
         }
@@ -137,9 +149,66 @@ void loop() {
       } else {
         sendmsg("Comando desconocido " + input);
       }
-
     }
   }
+}
+void stepCarroMove(int steps){
+  actiMotors(true);
+  for(int cantidad=0;cantidad<steps;cantidad++){
+    digitalWrite(dirCarro, LOW);
+    digitalWrite(stepCarro, HIGH);
+    delayMicroseconds(400);
+    digitalWrite(stepCarro, LOW);
+    delayMicroseconds(400);
+  }
+  actiMotors(false);
+}
+void stepRoloMove(int steps){
+  actiMotors(true);
+  for(int cantidad=0;cantidad<steps;cantidad++){
+    digitalWrite(dirRolo, LOW);
+    digitalWrite(stepRolo, HIGH);
+    delayMicroseconds(400);
+    digitalWrite(stepRolo, LOW);
+    delayMicroseconds(400);
+  }
+  actiMotors(false);
+}
+void carroHome(){
+  actiMotors(true);
+  digitalWrite(dirCarro, HIGH);
+  while(!limIzq()){
+    digitalWrite(stepCarro, HIGH);
+    delayMicroseconds(400);
+    digitalWrite(stepCarro, LOW);
+    delayMicroseconds(400);
+  }
+  actiMotors(false);
+}
+void carroEnd(){
+  actiMotors(true);
+  digitalWrite(dirCarro, LOW);
+  while(!limDer()){
+    digitalWrite(stepCarro, HIGH);   
+    delayMicroseconds(400);                     
+    digitalWrite(stepCarro, LOW);    
+    delayMicroseconds(400);
+  }
+  actiMotors(false);
+}
+void punzar(){
+  digitalWrite(punzon, HIGH);
+  delay(20);//se empieza a fallar con menos                   
+  digitalWrite(punzon, LOW);
+}
+void actiMotors(bool state){
+  digitalWrite(enableMotorsPin, !state);
+}
+bool limIzq(){
+  return digitalRead(finalIzquierda)==LOW;
+}
+bool limDer(){
+  return digitalRead(finalDerecha)==LOW;
 }
 void sendmsg(String msg) {
   msg.replace(" ", "_");
@@ -154,24 +223,6 @@ void blinke() {
   digitalWrite(LED_BUILTIN, HIGH);
   delay(100);
   digitalWrite(LED_BUILTIN, LOW);
-}
-void stopCar() {
-  digitalWrite(7, LOW);
-  digitalWrite(6, LOW);
-  digitalWrite(5, LOW);
-  digitalWrite(4, LOW);
-}
-void stopSheet() {
-  digitalWrite(8, LOW);
-  digitalWrite(9, LOW);
-  digitalWrite(10, LOW);
-  digitalWrite(11, LOW);
-}
-void returnCarrete() {
-  stepCar.setSpeed(120);
-  stepCar.step(-carrete);
-  carrete = 0;
-  stepCar.setSpeed(stepCar_vel);
 }
 String getValue(String data, char separator, int index){
     int found = 0;
