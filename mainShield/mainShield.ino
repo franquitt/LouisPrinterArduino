@@ -10,15 +10,15 @@
   http://www.arduino.cc/en/Tutorial/AnalogReadSerial
 */
 
-// the setup routine runs once when you press reset:
 int finalDerecha=12;
 int finalIzquierda=9;
+int punzon = 10;
 int enableMotorsPin=8;
 int dirRolo=4;
 int stepRolo=7;
 int dirCarro=2;
 int stepCarro=5;
-int punzon = 10;
+
 
 //distancias
 String input = "";
@@ -35,14 +35,14 @@ int carrete = 0;
 bool enabledMotors=false;
 
 void setup() {
+  pinMode(enableMotorsPin, OUTPUT);
+  digitalWrite(enableMotorsPin, HIGH);//DESACTIVA TODOS LOS MOTORES AL PRINCIPIO
   // initialize serial communication at 9600 bits per second:
   Serial.begin(9600);
   //configure pin 2 as an input and enable the internal pull-up resistor
   pinMode(finalDerecha, INPUT_PULLUP);
   pinMode(finalIzquierda, INPUT_PULLUP);
   pinMode(13, OUTPUT);
-  pinMode(enableMotorsPin, OUTPUT);
-  digitalWrite(enableMotorsPin, HIGH);//DESACTIVA TODOS LOS MOTORES AL PRINCIPIO
   pinMode(punzon, OUTPUT);
   pinMode(dirCarro, OUTPUT);
   pinMode(stepCarro, OUTPUT);
@@ -70,6 +70,12 @@ while (Serial.available() > 0) {
     } else if (input == "greetingsLouis") {
       blinke();
       sendmsg("greetingsMadProgrammer");
+    }else if (input == "limites") {
+      if(limDer())
+        sendmsg("derecho");
+      if(limIzq())
+        sendmsg("izquierdo");
+      sendmsg("listo");
 
     } else {
       if (input.startsWith("-")) { //DIMENSIONES
@@ -181,6 +187,8 @@ void stepCarroMove(int steps){
 void stepRoloMove(int steps){
   actiMotors(true);
   for(int cantidad=0;cantidad<steps;cantidad++){
+    if(limDer())
+      break;
     digitalWrite(dirRolo, LOW);
     digitalWrite(stepRolo, HIGH);
     delayMicroseconds(sleepRolo);
