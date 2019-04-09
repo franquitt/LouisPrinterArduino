@@ -22,13 +22,13 @@ int stepCarro=5;
 
 //distancias
 String input = "";
-int d_A = 20;
-int d_B = 35;
+int d_A = 30;
+int d_B = 50;
 int d_C = 25;
 int d_D = 50;
 int sleepCarro=400;
 int sleepRolo=400;
-int d_IncioCarro = 0;
+int d_IncioCarro = 200;
 
 int steepsDelay = 100;//era 100
 int carrete = 0;
@@ -38,7 +38,6 @@ void setup() {
   pinMode(enableMotorsPin, OUTPUT);
   digitalWrite(enableMotorsPin, HIGH);//DESACTIVA TODOS LOS MOTORES AL PRINCIPIO
   // initialize serial communication at 9600 bits per second:
-  Serial.begin(9600);
   //configure pin 2 as an input and enable the internal pull-up resistor
   pinMode(finalDerecha, INPUT_PULLUP);
   pinMode(finalIzquierda, INPUT_PULLUP);
@@ -50,11 +49,10 @@ void setup() {
   pinMode(dirRolo, OUTPUT);
   pinMode(stepRolo, OUTPUT);
   digitalWrite(stepRolo, LOW);
-  Serial.begin(9600);
   carroHome();
+  Serial.begin(9600);
 }
 
-// the loop routine runs over and over again forever:
 void loop() {
 while (Serial.available() > 0) {
     //sendmsg("recibido_crack! "+input);
@@ -76,7 +74,10 @@ while (Serial.available() > 0) {
       if(limIzq())
         sendmsg("izquierdo");
       sendmsg("listo");
-
+    }else if (input == "home") {
+      carroHome();
+    }else if (input == "end") {
+      carroEnd();
     } else {
       if (input.startsWith("-")) { //DIMENSIONES
           input=input.substring(1);
@@ -122,24 +123,21 @@ while (Serial.available() > 0) {
                 stepCarroMove(d_A);
                 carrete += d_A;
               }
-              delay(steepsDelay);
               break;
             case '3'://HORIZ CHARS
               stepCarroMove(d_B);
               carrete += d_B;
-              delay(steepsDelay);
               //sendmsg("DIST B");
               break;
             case '4'://VERT DOTS
               stepRoloMove(d_C);
               goBack = true;
-              delay(steepsDelay);
+              //delay(steepsDelay);
               //sendmsg("DIST C");
               break;
             case '5'://VERT RENG
               stepRoloMove(d_D);
               goBack = true;
-              delay(steepsDelay);
               //sendmsg("DIST D");
               break;
             case '6'://END SHEET
@@ -150,15 +148,9 @@ while (Serial.available() > 0) {
               break;
             case '8'://HORIZ DOTS + HORIZ CHARS
               stepCarroMove(d_A + d_B);
-              carrete += d_A + d_B;
-              delay(steepsDelay);
-              //sendmsg("HORIZ DOTS + HORIZ CHARS");
               break;
             case '9'://INICIO CARRO DIST
               stepCarroMove(d_IncioCarro);
-              carrete += d_B;
-              delay(steepsDelay);
-              //sendmsg("DIST B");
               break;
           }
           if (goBack) {
